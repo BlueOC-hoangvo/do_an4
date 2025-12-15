@@ -1,0 +1,46 @@
+# --- CHUNG (General) ---
+node_modules/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- BẢO MẬT (Quan trọng nhất) ---
+# Chặn tất cả các file môi trường chứa key/password
+.env
+.env.*
+!.env.example
+
+# --- LOGS ---
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+logs/
+*.log
+
+# --- FRONTEND (Expo/React Native) ---
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+*.tsbuildinfo
+app-example/
+
+# Generated native folders (nếu bạn dùng Prebuild)
+/android
+/ios
+# Nếu folder project của bạn lồng nhau (fe/android), cần chặn cụ thể hơn hoặc để git tự quét theo pattern trên
+
+# --- BACKEND (NestJS/Node) ---
+# Thư mục build của backend
+be/dist/
+be/build/
+coverage/
