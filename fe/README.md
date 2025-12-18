@@ -8,6 +8,11 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
    ```bash
    npm install
+
+   npm install @tanstack/react-query
+   npm install @shopify/flash-list
+   npx expo install expo-image
+
    ```
 
 2. Start the app

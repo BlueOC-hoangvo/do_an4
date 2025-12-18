@@ -1,79 +1,89 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import {
-  Stack,
-  useRouter,
-  useSegments,
-  useRootNavigationState,
-} from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
-import "react-native-reanimated";
-
-import { useColorScheme } from "@/src/hooks/use-color-scheme";
+import { useEffect } from "react";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { useAuthStore } from "@/src/features/auth/store/useAuthStore";
-
-// 1. Giữ Splash Screen để che quá trình load
-SplashScreen.preventAutoHideAsync();
-
+import { View, ActivityIndicator } from "react-native";
+import "../global.css"; // <--- THÊM DÒNG NÀY ĐẦU TIÊN
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
-  // --- LOGIC AUTHENTICATION ---
-  const { isAuthenticated, checkAuth, isLoading } = useAuthStore();
-  const segments = useSegments();
+  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const segments = useSegments(); // Lấy thông tin user đang đứng ở đâu (ví dụ: ['(tabs)', 'explore'])
   const router = useRouter();
-  const navigationState = useRootNavigationState();
 
-  // State riêng để kiểm soát việc đã sẵn sàng ẩn Splash chưa
-  const [isReady, setIsReady] = useState(false);
-
-  // 1. Kiểm tra Auth khi mở app
+  // 1. Kiểm tra token khi App vừa mở
   useEffect(() => {
-    const initApp = async () => {
-      await checkAuth();
-      setIsReady(true); // Đánh dấu là đã check xong
-    };
-    initApp();
+    checkAuth();
   }, []);
 
-  // 2. Điều hướng bảo vệ (Chỉ chạy khi navigation đã mount + đã check auth xong)
+  // 2. Logic "Gác cổng" (Protect Route)
   useEffect(() => {
-    if (!navigationState?.key || !isReady) return;
+    // Nếu đang load (đang check token trong storage) thì chưa làm gì cả
+    if (isLoading) return;
 
+    // Kiểm tra xem user có đang ở trong nhóm route cần bảo vệ không
+    // Ở đây giả sử thư mục '(tabs)' là nơi cần đăng nhập mới được vào
     const inAuthGroup = segments[0] === "(tabs)";
 
-    if (isAuthenticated && !inAuthGroup) {
-      // Đã login -> Vào trong
-      router.replace("/(tabs)");
-    } else if (!isAuthenticated && inAuthGroup) {
-      // Chưa login -> Ra ngoài
+    if (!isAuthenticated && inAuthGroup) {
+      // TRƯỜNG HỢP 1: Chưa đăng nhập mà cố vào trang nội bộ -> Đá về Login
+      // Dùng replace để user không thể bấm nút Back quay lại trang cũ
       router.replace("/login");
+    } else if (isAuthenticated && segments[0] === "login") {
+      // TRƯỜNG HỢP 2: Đã đăng nhập rồi mà lại lạc vào trang Login -> Đá vào trong
+      router.replace("/(tabs)/home");
     }
-  }, [isAuthenticated, segments, navigationState?.key, isReady]);
+  }, [isAuthenticated, isLoading, segments]);
 
-  // 3. Ẩn Splash Screen khi mọi thứ đã sẵn sàng
-  useEffect(() => {
-    if (isReady && navigationState?.key) {
-      SplashScreen.hideAsync();
-    }
-  }, [isReady, navigationState?.key]);
+  // 3. Màn hình chờ (Splash Screen giả) khi đang check token
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
-  // --- QUAN TRỌNG: LUÔN RENDER STACK, KHÔNG RETURN NULL ---
-  // Nếu return null ở đây sẽ gây lỗi "Attempted to navigate before mounting..."
+  // 4. Định nghĩa cấu trúc Stack navigation
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="login" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen
+        name="product/[id]"
+        options={{
+          headerShown: true,
+          title: "Chi tiết sản phẩm",
+          headerBackTitle: "Trở lại",
+        }}
+      />
+
+      <Stack.Screen
+        name="cart"
+        options={{
+          headerShown: true,
+          title: "Giỏ hàng",
+          presentation: "modal", // Hoặc 'card' tùy sở thích
+        }}
+      />
+
+      <Stack.Screen
+        name="search"
+        options={{
+          headerShown: false,
+          animation: "fade_from_bottom",
+        }}
+      />
+
+      {/* 4. Checkout Flow */}
+      <Stack.Screen name="(checkout)" />
+
+      {/* 5. Modal & Not Found */}
+      <Stack.Screen
+        name="modal"
+        options={{
+          presentation: "modal",
+          title: "Thông báo",
+        }}
+      />
+      <Stack.Screen name="+not-found" />
+    </Stack>
   );
 }

@@ -1,13 +1,25 @@
 // src/features/auth/api/authApi.ts
 import client from "@/src/api/client";
-import { LoginDTO } from "../types"; // Hoặc define LoginDTO tại đây
-import { LoginResponse } from "../types";
+import { LoginDTO, RegisterDTO } from "../types"; // Bạn cần tạo interface này ở types.ts tương tự BE
+import { LoginResponse, User } from "../types";
 
 export const authApi = {
-  login: async (data: any): Promise<LoginResponse> => {
-    const response = await client.post("/auth/login", data);
+  login: async (data: LoginDTO) => {
+    const response = await client.post<LoginResponse>("/auth/login", data);
     return response.data;
   },
 
-  // Có thể thêm register, logout, refresh-token sau này
+  register: async (data: RegisterDTO) => {
+    const response = await client.post("/auth/register", data);
+    return response.data;
+  },
+
+  logout: async () => {
+    return await client.post("/auth/logout");
+  },
+
+  getMe: async () => {
+    const response = await client.get<{ user: User }>("/auth/me");
+    return response.data.user;
+  },
 };

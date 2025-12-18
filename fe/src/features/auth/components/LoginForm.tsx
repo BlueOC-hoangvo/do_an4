@@ -1,123 +1,75 @@
-// src/features/auth/components/LoginForm.tsx
 import React, { useState } from "react";
 import {
+  View,
   TextInput,
-  TouchableOpacity,
+  Button,
   StyleSheet,
-  ActivityIndicator,
   Alert,
+  ActivityIndicator,
 } from "react-native";
-import { ThemedText } from "@/src/components/themed-text";
-import { ThemedView } from "@/src/components/themed-view";
-import { useAuthStore } from "../store/useAuthStore";
-import { useThemeColor } from "@/src/hooks/use-theme-color";
+import { useAuthStore } from "../store/useAuthStore"; // Import từ store cùng feature
 
 export const LoginForm = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-
-  const { login, isLoading, error } = useAuthStore();
-  const backgroundColor = useThemeColor({}, "background");
-  const textColor = useThemeColor({}, "text");
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuthStore();
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
-      return;
+      return Alert.alert("Thông báo", "Vui lòng nhập đầy đủ thông tin");
     }
 
+    setLoading(true);
     try {
       await login({ username, password });
-    } catch (err) {
-      // Error đã được handle trong store, nhưng có thể alert thêm ở đây nếu muốn
+      // Không cần navigate, store/layout tự handle
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi đăng nhập",
+        error.response?.data?.message || "Có lỗi xảy ra"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Watch Store
-      </ThemedText>
-      <ThemedText style={styles.subtitle}>Đăng nhập để tiếp tục</ThemedText>
-
-      {/* Input Username */}
+    <View style={styles.formContainer}>
       <TextInput
-        style={[styles.input, { color: textColor, borderColor: textColor }]}
-        placeholder="Tài khoản"
-        placeholderTextColor="#888"
+        style={styles.input}
+        placeholder="Tên đăng nhập"
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
       />
-
-      {/* Input Password */}
       <TextInput
-        style={[styles.input, { color: textColor, borderColor: textColor }]}
+        style={styles.input}
         placeholder="Mật khẩu"
-        placeholderTextColor="#888"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
 
-      {/* Error Message */}
-      {error && <ThemedText style={styles.errorText}>{error}</ThemedText>}
-
-      {/* Submit Button */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <ThemedText style={styles.buttonText}>Đăng nhập</ThemedText>
-        )}
-      </TouchableOpacity>
-    </ThemedView>
+      {loading ? (
+        <ActivityIndicator size="small" color="#0000ff" />
+      ) : (
+        <Button title="Đăng nhập" onPress={handleLogin} />
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
+  formContainer: {
     width: "100%",
   },
-  title: {
-    textAlign: "center",
-    marginBottom: 10,
-    fontSize: 32,
-  },
-  subtitle: {
-    textAlign: "center",
-    marginBottom: 30,
-    opacity: 0.7,
-  },
   input: {
-    height: 50,
     borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 12,
+    marginBottom: 16,
     borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: "#0a7ea4", // Màu xanh chủ đạo của React Native
-    height: 50,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  errorText: {
-    color: "red",
-    marginBottom: 10,
-    textAlign: "center",
+    backgroundColor: "#fff",
   },
 });
